@@ -13,4 +13,17 @@ WITH
   SELECT "66666", "2020-01-01", "ppc", "CONVERSION" UNION ALL
   SELECT "66666", "2020-01-02", "blog", "zero" UNION ALL
   SELECT "66666", "2020-01-03", "ppc", "zero"),
+FormatedStreaming AS (
+  SELECT
+    userid,
+    UNIX_SECONDS(TIMESTAMP(time)) AS date_in_sec,
+    source,
+    CASE
+      WHEN event = 'zero' THEN 0
+      WHEN event = 'CONVERSION' THEN 1
+  END
+    AS event
+  FROM
+    WebsiteUserStreaming)
+
 ```
