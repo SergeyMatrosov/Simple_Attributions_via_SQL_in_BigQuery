@@ -13,7 +13,7 @@ WITH
   SELECT "66666", "2020-01-01", "ppc", "CONVERSION" UNION ALL
   SELECT "66666", "2020-01-02", "blog", "zero" UNION ALL
   SELECT "66666", "2020-01-03", "ppc", "zero"),
-FormatedStreaming AS (
+  FormatedStreaming AS (
   SELECT
     userid,
     UNIX_SECONDS(TIMESTAMP(time)) AS date_in_sec,
@@ -25,5 +25,203 @@ FormatedStreaming AS (
     AS event
   FROM
     WebsiteUserStreaming)
+--TO TEST ATTRIBUTION, JUST _COMMENT_ FIRST '/*' ABOVE OF ITS NAME.
+--YOU CAN USE ONLY ONE OF THESE CODE BLOCKS BELOW AT ONCE! OVERVIEWS, IT WON'T WORK.
 
+--EXAMPLE:
+--TABLE WebsiteUserStreaming
+--/* <-uncommented
+SELECT
+*
+FROM 
+WebsiteUserStreaming
+--*/
+
+/*
+--LAST_TOUCH
+SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN event > 0 AND date_in_sec > LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
+    WHEN event > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
+  ELSE
+  'null'
+END
+  AS last_touch_attribution,
+FROM
+  FormatedStreaming
+--*/
+
+/*
+--LAST_NOTOUCH_NON_DIRECT
+SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN event > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
+    WHEN event = 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN 'null'
+    WHEN event = 0 AND LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN 'null'
+    WHEN SUM(event) OVER (PARTITION BY userid) > 0 AND date_in_sec < LAST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+    AND LEAD(source) OVER (PARTITION BY userid ORDER BY date_in_sec) = 'direct' AND source != 'direct' THEN '1'
+    WHEN event > 0 AND date_in_sec = LAST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AND source != 'direct' THEN '1'
+  ELSE
+  'null'
+END
+  AS last_non_direct,
+FROM
+  FormatedStreaming
+--*/
+
+/*
+--FIRST_TOUCH
+SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN MAX(event) OVER (PARTITION BY userid) = 1 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
+  ELSE
+  'null'
+END
+  AS first_touch_attribution
+FROM
+  FormatedStreaming
+--*/
+
+/*
+--ANY TOUCH
+SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN MAX(event) OVER (PARTITION BY userid) = 1 THEN '1'
+  ELSE
+  'null'
+END
+  AS any_touch_attribution
+FROM
+  FormatedStreaming
+--*/
+
+/*
+--ALL CREDIT TO BLOG ONLY
+SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN MAX(event) OVER (PARTITION BY userid) = 1 AND source = 'blog' THEN '1'
+  ELSE
+  'null'
+END
+  AS blog_only
+FROM
+  FormatedStreaming
+--*/
+
+/*
+--BLOG + LAST TOUCH
+SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN MAX(event) OVER (PARTITION BY userid) = 1 AND source = 'blog' THEN '1'
+    WHEN event > 0 AND date_in_sec > LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
+    WHEN event > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
+  ELSE
+  'null'
+END
+  AS blog_and_last
+FROM
+  FormatedStreaming
+--*/
+
+/*
+--TIME_DECAY
+SELECT
+userid,
+date_in_sec,
+source,
+ROUND(IF(SAFE_CAST(weights AS FLOAT64)=0 OR SUM(SAFE_CAST(weights AS FLOAT64)) OVER (PARTITION BY userid)=0, 0, SAFE_CAST(weights AS FLOAT64)/SUM(SAFE_CAST(weights AS FLOAT64)) OVER (PARTITION BY userid)), 2) AS time_decay,
+FROM
+(SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND MAX(event) OVER (PARTITION BY userid) = 1 THEN SAFE_CAST(1.1-ROW_NUMBER() OVER (PARTITION BY userid) AS STRING)
+    WHEN date_in_sec > LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND MAX(event) OVER (PARTITION BY userid) = 1 THEN SAFE_CAST(ROUND(1.1-1/ROW_NUMBER() OVER (PARTITION BY userid), 2) AS STRING)
+  ELSE
+  'null'
+END
+  AS weights
+FROM
+  FormatedStreaming)
+--*/
+
+/*
+--TIME_DECAY_REVERSED
+SELECT
+userid,
+date_in_sec,
+source,
+ROUND(IF(SAFE_CAST(weights AS FLOAT64)=0 OR SUM(SAFE_CAST(weights AS FLOAT64)) OVER (PARTITION BY userid)=0, 0, SAFE_CAST(weights AS FLOAT64)/SUM(SAFE_CAST(weights AS FLOAT64)) OVER (PARTITION BY userid)), 2) AS time_decay_reversed,
+FROM
+(SELECT
+  userid,
+  date_in_sec,
+  source,
+  CASE
+    WHEN date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND MAX(event) OVER (PARTITION BY userid) = 1 THEN SAFE_CAST(ROW_NUMBER() OVER (PARTITION BY userid) AS STRING)
+    WHEN date_in_sec > LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND MAX(event) OVER (PARTITION BY userid) = 1 THEN SAFE_CAST(ROUND(1/ROW_NUMBER() OVER (PARTITION BY userid), 2) AS STRING)
+  ELSE
+  'null'
+END
+  AS weights
+FROM
+  FormatedStreaming)
+--*/
+
+/*
+--POSITION BASED
+SELECT
+userid,
+date_in_sec,
+source,
+CASE 
+WHEN SUM(SAFE_CAST(weights AS FLOAT64)) OVER (PARTITION BY userid) > 1 THEN SAFE_CAST(ROUND(SAFE_CAST(weights AS FLOAT64)/SUM(SAFE_CAST(weights AS FLOAT64)) OVER (PARTITION BY userid), 2) AS STRING)
+ELSE weights
+END AS position_based
+FROM
+(
+SELECT
+  userid,
+  date_in_sec,
+  source,
+
+  CASE
+  --one channel and instant conversion
+  WHEN MAX(event) OVER (PARTITION BY userid) > 0 AND COUNT(userid) OVER (PARTITION BY userid) = 1 THEN '1'
+  
+  WHEN MAX(event) OVER (PARTITION BY userid) > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND COUNT(userid) OVER (PARTITION BY userid) > 2 
+  THEN SAFE_CAST(ROUND(COUNT(userid) OVER (PARTITION BY userid)*0.4, 3) AS STRING)
+  
+  WHEN MAX(event) OVER (PARTITION BY userid) > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND COUNT(userid) OVER (PARTITION BY userid) = 2 THEN '0.5'
+  WHEN MAX(event) OVER (PARTITION BY userid) > 0 AND date_in_sec != FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND date_in_sec != LAST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+  AND COUNT(userid) OVER (PARTITION BY userid) > 2 THEN SAFE_CAST(ROUND(COUNT(userid) OVER (PARTITION BY userid)*0.2, 1) AS STRING)
+  
+  WHEN MAX(event) OVER (PARTITION BY userid) > 0 AND date_in_sec = LAST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND COUNT(userid) OVER (PARTITION BY userid) > 2 
+  THEN SAFE_CAST(ROUND(COUNT(userid) OVER (PARTITION BY userid)*0.4, 1) AS STRING)
+  
+  WHEN MAX(event) OVER (PARTITION BY userid) > 0 AND date_in_sec = LAST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) AND COUNT(userid) OVER (PARTITION BY userid) = 2 THEN '0.5'
+  ELSE '0'
+  END AS weights
+FROM
+  FormatedStreaming)
+--*/
 ```
