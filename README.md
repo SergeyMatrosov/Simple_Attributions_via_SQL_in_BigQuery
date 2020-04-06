@@ -1,4 +1,4 @@
-# Simple_Attributions_via_SQL_in_BigQuery
+# Simple Attributions via SQL in BigQuery
 Examples of simple attributions for digital marketing efforts for reporting, using SQL in BigQuery:
 - Last Touch
 - Last Non-Direct Touch
