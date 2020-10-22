@@ -10,7 +10,7 @@ Examples of simple attributions for digital marketing efforts for reporting, usi
 
 In case if you using Clickhouse and just want to generate fake table as in example, use this:
 
-'''
+```
 --CREATE VIEW IF NOT EXISTS WebsiteUserStreaming AS
 SELECT
 *
@@ -72,4 +72,4 @@ UNION ALL
 
 WITH '66666' AS userid, '2020-01-03' AS time, 'ppc' AS source, 'zero' AS event
 SELECT userid, time, source, event)
-'''
+```
