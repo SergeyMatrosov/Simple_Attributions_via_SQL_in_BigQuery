@@ -16,11 +16,11 @@ WITH
   --added here two rows: one with an order and another one is without by user '22222'
   SELECT "22222", "2020-01-08", "direct", "zero" UNION ALL
   SELECT "22222", "2020-01-09", "direct", "CONVERSION" UNION ALL
+  --added here two rows: one with an order and another one is without by user '66666'
   SELECT "66666", "2020-01-01", "blog", "zero" UNION ALL
   SELECT "66666", "2020-01-02", "ppc", "CONVERSION" UNION ALL
   SELECT "66666", "2020-01-03", "blog", "zero" UNION ALL
   SELECT "66666", "2020-01-04", "ppc", "zero" UNION ALL
-  --added here a row with second order by user '66666'
   SELECT "66666", "2020-01-05", "blog", "CONVERSION"),
   FormatedStreaming AS (
   SELECT
