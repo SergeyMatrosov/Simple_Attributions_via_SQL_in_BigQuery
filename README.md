@@ -8,6 +8,10 @@ Examples of simple attributions for digital marketing efforts for reporting, usi
 - Time Decay Reversed
 - Position Based
 
+## 2020, November Update:
+Added a query for handeling multiply orders from the same user (only for LastTouch Attribution as an example).
+
+## Fake table for Clickhouse
 In case if you using Clickhouse and just want to generate fake table as in example, use this:
 
 ```
