@@ -56,7 +56,7 @@ SELECT
   CASE
     WHEN event > 0 AND date_in_sec > LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
     WHEN event > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
-    --addition condition
+    --additional condition
     WHEN event != 0 AND total_orders - LAG(total_orders) OVER (PARTITION BY userid ORDER BY date_in_sec) = 1 THEN '1'
   ELSE
   'null'
