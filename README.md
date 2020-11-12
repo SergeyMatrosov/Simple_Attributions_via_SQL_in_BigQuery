@@ -9,7 +9,7 @@ Examples of simple attributions for digital marketing efforts for reporting, usi
 - Position Based
 
 ## 2020, November Update:
-Added a query for handeling multiply orders from the same user (only for LastTouch Attribution as an example).
+Added a query for handeling [several orders from the same user](https://github.com/SergeyMatrosov/Simple_Attributions_via_SQL_in_BigQuery/blob/master/Attributions_ManyOrders.md) (Beware: Last Touch Non Direct is not working correctly!).
 
 ## Fake table for Clickhouse
 In case if you using Clickhouse and just want to generate fake table as in example, use this:
