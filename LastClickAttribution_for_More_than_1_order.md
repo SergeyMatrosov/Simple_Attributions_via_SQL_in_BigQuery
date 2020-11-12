@@ -3,8 +3,9 @@ WITH
   WebsiteUserStreaming AS (
   SELECT "11111" AS userid, "2020-01-01" AS time, "blog" AS source, "zero" AS event UNION ALL
   SELECT "11111", "2020-01-02", "organic", "CONVERSION" UNION ALL
-  --added here a new row with another order by user '11111'
+  --added here rows with another two orders by user '11111'
   SELECT "11111", "2020-01-03", "organic", "CONVERSION" UNION ALL
+  SELECT "11111", "2020-01-04", "blog", "CONVERSION" UNION ALL
   SELECT "22222", "2020-01-01", "ppc", "zero" UNION ALL
   SELECT "22222", "2020-01-02", "blog", "zero" UNION ALL
   SELECT "22222", "2020-01-03", "organic", "zero" UNION ALL
@@ -14,7 +15,9 @@ WITH
   SELECT "22222", "2020-01-07", "direct", "CONVERSION" UNION ALL
   SELECT "66666", "2020-01-01", "ppc", "CONVERSION" UNION ALL
   SELECT "66666", "2020-01-02", "blog", "zero" UNION ALL
-  SELECT "66666", "2020-01-03", "ppc", "zero"),
+  SELECT "66666", "2020-01-03", "ppc", "zero" UNION ALL
+  --added here a row with second order by user '66666'
+  SELECT "66666", "2020-01-04", "blog", "CONVERSION"),
   FormatedStreaming AS (
   SELECT
   *,
@@ -41,7 +44,7 @@ WITH
 SELECT
 *
 FROM
-WebsiteUserStreaming
+FormatedStreaming
 */
 
 --/*
@@ -53,7 +56,8 @@ SELECT
   CASE
     WHEN event > 0 AND date_in_sec > LAG(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
     WHEN event > 0 AND date_in_sec = FIRST_VALUE(date_in_sec) OVER (PARTITION BY userid ORDER BY date_in_sec) THEN '1'
-    WHEN event != 0 AND total_orders - event = 1 THEN '1'
+    --addition condition
+    WHEN event != 0 AND total_orders - LAG(total_orders) OVER (PARTITION BY userid ORDER BY date_in_sec) = 1 THEN '1'
   ELSE
   'null'
 END
